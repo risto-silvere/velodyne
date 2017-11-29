@@ -71,3 +71,11 @@ install(PROGRAMS scripts/gen_calibration.py
 if (CATKIN_ENABLE_TESTING)
   add_subdirectory(tests)
 endif()
+
+##########
+#  apps  #
+##########
+
+add_executable(packets_to_points src/packets_to_points.cpp)
+target_link_libraries(packets_to_points velodyne_rawdata ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES})
+
