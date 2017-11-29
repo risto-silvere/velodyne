@@ -12,7 +12,8 @@ int main(int argc, char *argv[])
         std::cout << "Usage: packets_to_points bag_in bag_out\n";
     else {
         velodyne_rawdata::RawData* data_ = new velodyne_rawdata::RawData();
-        data_->setupOffline("/home/silvere/SLAM_catkin_ws/src/velodyne/velodyne_pointcloud/params/32db.yaml", 0., 1000000000.);
+        data_->setParameters(0.4, 130.0, 0, 0);
+        data_->setupOffline("/home/osboxes/SLAM_catkin_ws/src/velodyne/velodyne_pointcloud/params/32db.yaml", 130.0, 0.4);
         rosbag::Bag bag, bagout;
         bag.open(argv[1], rosbag::bagmode::Read);
         bagout.open(argv[2], rosbag::bagmode::Write);
@@ -21,15 +22,23 @@ int main(int argc, char *argv[])
         BOOST_FOREACH(rosbag::MessageInstance const m, view) {
             velodyne_msgs::VelodyneScan::ConstPtr scanMsg = m.instantiate<velodyne_msgs::VelodyneScan>();
             if (scanMsg != NULL) {
-                velodyne_rawdata::VPointCloud::Ptr outMsg(new velodyne_rawdata::VPointCloud());
-                outMsg->header.stamp = pcl_conversions::toPCL(scanMsg->header).stamp;
-                outMsg->header.frame_id = scanMsg->header.frame_id;
-                outMsg->height = 1;
                 for (size_t i = 0; i < scanMsg->packets.size(); ++i) {
+                    velodyne_rawdata::VPointCloud::Ptr outMsg(new velodyne_rawdata::VPointCloud());
+                    outMsg->header.frame_id = scanMsg->header.frame_id;
+                    outMsg->height = 1;
                     data_->unpack(scanMsg->packets[i], *outMsg);
+                    uint32_t sec_in_hour_ros = scanMsg->header.stamp.sec % 3600;
+                    uint32_t sec_in_hour_gps = outMsg->header.stamp / 1000000;
+                    uint32_t sec;
+                    if (sec_in_hour_ros > 3000 && sec_in_hour_gps < 600)
+                        sec = scanMsg->header.stamp.sec - sec_in_hour_ros + sec_in_hour_gps + 3600;
+                    else if (sec_in_hour_gps > 3000 && sec_in_hour_ros < 600)
+                        sec = scanMsg->header.stamp.sec - sec_in_hour_ros + sec_in_hour_gps - 3600;
+                    else
+                        sec = scanMsg->header.stamp.sec - sec_in_hour_ros + sec_in_hour_gps;
+                    uint32_t nsec = (outMsg->header.stamp % 1000000) * 1000;
+                    bagout.write("/horizontal_laser_3d", ros::Time(sec, nsec), outMsg);
                 }
-                std::cout << outMsg;
-                bagout.write("horizontal_laser_3d", ros::Time::now(), outMsg);
             }
         }
         bag.close();

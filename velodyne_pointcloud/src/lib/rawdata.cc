@@ -156,7 +156,7 @@ namespace velodyne_rawdata
     }
     
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
-
+    pc.header.stamp = raw->revolution;
     for (int i = 0; i < BLOCKS_PER_PACKET; i++) {
 
       // upper bank lasers are numbered [0..31]
