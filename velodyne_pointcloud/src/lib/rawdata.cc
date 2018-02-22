@@ -158,7 +158,7 @@ namespace velodyne_rawdata
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
     pc.header.stamp = raw->revolution;
     for (int i = 0; i < BLOCKS_PER_PACKET; i++) {
-
+      float prev_x[SCANS_PER_BLOCK], prev_y[SCANS_PER_BLOCK], prev_z[SCANS_PER_BLOCK];
       // upper bank lasers are numbered [0..31]
       // NOTE: this is a change from the old velodyne_common implementation
       int bank_origin = 0;
@@ -287,21 +287,30 @@ namespace velodyne_rawdata
             (1 - static_cast<float>(tmp.uint)/65535)*(1 - static_cast<float>(tmp.uint)/65535)));
           intensity = (intensity < min_intensity) ? min_intensity : intensity;
           intensity = (intensity > max_intensity) ? max_intensity : intensity;
-  
+
           if (pointInRange(distance)) {
+            // only add second return if it differs from the first one
+            bool add_point = true;
+            if (i % 2 == 1 && (prev_x[j] == x && prev_y[j] == y && prev_z[j] == z))
+              add_point = false;
+            if (add_point) {
+              // convert polar coordinates to Euclidean XYZ
+              VPoint point;
+              point.ring = corrections.laser_ring;
+              point.x = x_coord;
+              point.y = y_coord;
+              point.z = z_coord;
+              point.intensity = intensity;
+              point.echo = i % 2;
   
-            // convert polar coordinates to Euclidean XYZ
-            VPoint point;
-            point.ring = corrections.laser_ring;
-            point.x = x_coord;
-            point.y = y_coord;
-            point.z = z_coord;
-            point.intensity = intensity;
-  
-            // append this point to the cloud
-            pc.points.push_back(point);
-            ++pc.width;
+              // append this point to the cloud
+              pc.points.push_back(point);
+              ++pc.width;
+            }
           }
+          prev_x[j] = x;
+          prev_y[j] = y;
+          prev_z[j] = z;
         }
       }
     }
