@@ -150,9 +150,6 @@ namespace velodyne_rawdata
     
     void unpack(const velodyne_msgs::VelodynePacket &pkt, VPointCloud &pc, int filter_rings);
 
-    void unpack_single_point(const velodyne_msgs::VelodynePacket &pkt,
-                                      std::vector<VPointCloud> &pc);
-
     void setParameters(double min_range, double max_range, double view_direction,
                        double view_width);
 
