@@ -138,13 +138,20 @@ namespace velodyne_rawdata
   }
 
 
+  void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt,
+                       VPointCloud &pc)
+  {
+    unpack(pkt, pc, 0);
+    return;
+  }
+
   /** @brief convert raw packet to point cloud
    *
    *  @param pkt raw packet to unpack
    *  @param pc shared pointer to point cloud (points are appended)
    */
   void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt,
-                       VPointCloud &pc)
+                       VPointCloud &pc, int filter_rings)
   {
     ROS_DEBUG_STREAM("Received packet, time: " << pkt.stamp);
     
@@ -177,6 +184,7 @@ namespace velodyne_rawdata
         velodyne_pointcloud::LaserCorrection &corrections = 
           calibration_.laser_corrections[laser_number];
 
+        if (filter_rings == 0 || corrections.laser_ring % 2 == filter_rings % 2) {
         /** Position Calculation */
 
         union two_bytes tmp;
@@ -311,11 +319,11 @@ namespace velodyne_rawdata
           prev_x[j] = x;
           prev_y[j] = y;
           prev_z[j] = z;
-        }
+        } }
       }
     }
   }
-  
+
   /** @brief convert raw VLP16 packet to point cloud
    *
    *  @param pkt raw packet to unpack
