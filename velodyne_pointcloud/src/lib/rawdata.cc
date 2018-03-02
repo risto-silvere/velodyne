@@ -323,7 +323,6 @@ namespace velodyne_rawdata
       }
     }
   }
-  
 
   /** @brief convert raw VLP16 packet to point cloud
    *
