@@ -351,7 +351,9 @@ namespace velodyne_rawdata
         bank_origin = 32;
       }
       for (int j = 0, k = 0; j < SCANS_PER_BLOCK; j++, k += RAW_SCAN_SIZE) {
-(*pc_c).header.stamp = (uint64_t)(raw->revolution)*1000 + i*46080+j*1152;
+      // exact point timing, see HDL-32E: Packet Structure & Timing Definition
+      // slide 21
+      (*pc_c).header.stamp = (uint64_t)(raw->revolution)*1000 + i*46080+j*1152;
         float x, y, z;
         float intensity;
         uint8_t laser_number;       ///< hardware laser number
