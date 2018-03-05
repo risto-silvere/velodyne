@@ -308,6 +308,7 @@ namespace velodyne_rawdata
               point.x = x_coord;
               point.y = y_coord;
               point.z = z_coord;
+              point.data[3] = i*46.080e-6+j*1.152e-6;
               point.intensity = intensity;
               point.echo = i % 2;
   
