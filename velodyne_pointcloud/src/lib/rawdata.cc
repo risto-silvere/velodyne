@@ -163,7 +163,7 @@ namespace velodyne_rawdata
     }
     
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
-    pc.header.stamp = raw->revolution;
+    pc.header.stamp = raw->revolution+543;
     for (int i = 0; i < BLOCKS_PER_PACKET; i++) {
       float prev_x[SCANS_PER_BLOCK], prev_y[SCANS_PER_BLOCK], prev_z[SCANS_PER_BLOCK];
       // upper bank lasers are numbered [0..31]
@@ -308,7 +308,7 @@ namespace velodyne_rawdata
               point.x = x_coord;
               point.y = y_coord;
               point.z = z_coord;
-              point.data[3] = i*46.080e-6+j*1.152e-6;
+              point.data[3] = i*46.080e-6 + j*1.152e-6 - 542.592e-6;
               point.intensity = intensity;
               point.echo = i % 2;
   
