@@ -141,7 +141,7 @@ namespace velodyne_rawdata
   void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt,
                        VPointCloud &pc)
   {
-    unpack(pkt, pc, 0);
+    unpack(pkt, pc, 0, false);
     return;
   }
 
@@ -151,7 +151,7 @@ namespace velodyne_rawdata
    *  @param pc shared pointer to point cloud (points are appended)
    */
   void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt,
-                       VPointCloud &pc, int filter_rings)
+                       VPointCloud &pc, int filter_rings, const bool dual_echos)
   {
     ROS_DEBUG_STREAM("Received packet, time: " << pkt.stamp);
     
@@ -163,9 +163,22 @@ namespace velodyne_rawdata
     }
     
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
-    pc.header.stamp = raw->revolution+543;
+    uint32_t packet_time_ms = 543;
+    float packet_time = 542.592e-6;
+    if (dual_echos) {
+        packet_time_ms = 266;
+        packet_time = 266.112e-6;
+    }
+
+    pc.header.stamp = raw->revolution+packet_time_ms;
     for (int i = 0; i < BLOCKS_PER_PACKET; i++) {
       float prev_x[SCANS_PER_BLOCK], prev_y[SCANS_PER_BLOCK], prev_z[SCANS_PER_BLOCK];
+      int BLOCK_ID = i;
+      int ECHO_ID = 0;
+      if (dual_echos) {
+          BLOCK_ID = i/2;
+          ECHO_ID = i%2;
+      }
       // upper bank lasers are numbered [0..31]
       // NOTE: this is a change from the old velodyne_common implementation
       int bank_origin = 0;
@@ -299,7 +312,7 @@ namespace velodyne_rawdata
           if (pointInRange(distance)) {
             // only add second return if it differs from the first one
             bool add_point = true;
-            if (i % 2 == 1 && (prev_x[j] == x && prev_y[j] == y && prev_z[j] == z))
+            if (dual_echos && i % 2 == 1 && (prev_x[j] == x && prev_y[j] == y && prev_z[j] == z))
               add_point = false;
             if (add_point) {
               // convert polar coordinates to Euclidean XYZ
@@ -308,9 +321,9 @@ namespace velodyne_rawdata
               point.x = x_coord;
               point.y = y_coord;
               point.z = z_coord;
-              point.data[3] = i*46.080e-6 + j*1.152e-6 - 542.592e-6;
+              point.data[3] = BLOCK_ID*46.080e-6 + j*1.152e-6 - packet_time;
               point.intensity = intensity;
-              point.echo = i % 2;
+              point.echo = ECHO_ID;
   
               // append this point to the cloud
               pc.points.push_back(point);
