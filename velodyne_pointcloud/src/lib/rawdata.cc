@@ -141,7 +141,7 @@ namespace velodyne_rawdata
   void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt,
                        VPointCloud &pc)
   {
-    unpack(pkt, pc, 0, false);
+    unpack(pkt, pc, 0, false, 2);
     return;
   }
 
@@ -151,7 +151,8 @@ namespace velodyne_rawdata
    *  @param pc shared pointer to point cloud (points are appended)
    */
   void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt,
-                       VPointCloud &pc, int filter_rings, const bool dual_echos)
+                       VPointCloud &pc, int filter_rings, const bool dual_echos,
+                       int echo_num)
   {
     ROS_DEBUG_STREAM("Received packet, time: " << pkt.stamp);
     
@@ -312,8 +313,11 @@ namespace velodyne_rawdata
           if (pointInRange(distance)) {
             // only add second return if it differs from the first one
             bool add_point = true;
-            if (dual_echos && i % 2 == 1 && (prev_x[j] == x && prev_y[j] == y && prev_z[j] == z))
+            if (dual_echos && echo_num == 2 && i % 2 == 1 && (prev_x[j] == x && prev_y[j] == y && prev_z[j] == z)) {
               add_point = false;
+            } else if (dual_echos && echo_num != 2 && (i%2 != echo_num)) {
+              add_point = false;
+            }
             if (add_point) {
               // convert polar coordinates to Euclidean XYZ
               VPoint point;

@@ -149,7 +149,7 @@ namespace velodyne_rawdata
     void unpack(const velodyne_msgs::VelodynePacket &pkt, VPointCloud &pc);
     
     void unpack(const velodyne_msgs::VelodynePacket &pkt, VPointCloud &pc, int filter_rings,
-                bool dual_echos);
+                bool dual_echos, int echo_num);
 
     void setParameters(double min_range, double max_range, double view_direction,
                        double view_width);
