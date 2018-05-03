@@ -30,6 +30,11 @@ namespace velodyne_pointcloud
     float    intensity;                 ///< laser intensity reading
     uint16_t ring;                      ///< laser ring number
     uint16_t echo;
+    uint8_t R;
+    uint8_t G;
+    uint8_t B;
+    uint8_t A;
+    uint16_t numecho;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
   } EIGEN_ALIGN16;
 
@@ -42,7 +47,12 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIR,
                                   (float, z, z)
                                   (float, intensity, intensity)
                                   (uint16_t, ring, ring)
-                                  (uint16_t, echo, echo))
+                                  (uint16_t, echo, echo)
+                                  (uint8_t, R, R)
+                                  (uint8_t, G, G)
+                                  (uint8_t, B, B)
+                                  (uint8_t, A, A)
+                                  (uint16_t, numecho, numecho))
 
 #endif // __VELODYNE_POINTCLOUD_POINT_TYPES_H
 
