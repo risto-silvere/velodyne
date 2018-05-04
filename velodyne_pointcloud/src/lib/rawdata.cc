@@ -314,6 +314,9 @@ namespace velodyne_rawdata
                 temp_points[j].ring = corrections.laser_ring;
                 temp_points[j].data[3] = BLOCK_ID/2*46.080e-6 + j*1.152e-6 - packet_time;
                 temp_points[j].intensity = intensity;
+                temp_points[j].r = 0;
+                temp_points[j].g = 0;
+                temp_points[j].b = 0;
                 temp_points_in_range[j] = pointInRange(distance);
               } else {
                 bool echo_differs = ((x_coord != temp_points[j].x)
@@ -327,6 +330,9 @@ namespace velodyne_rawdata
                 point.z = z_coord;
                 point.data[3] = BLOCK_ID/2*46.080e-6 + j*1.152e-6 - packet_time;
                 point.intensity = intensity;
+                point.r = 0;
+                point.g = 0;
+                point.b = 0;
                 if (echo_num == 0 && temp_points_in_range[j]) {
                   temp_points[j].numecho = 1;
                   temp_points[j].echo = 1;
@@ -365,6 +371,9 @@ namespace velodyne_rawdata
               point.z = z_coord;
               point.data[3] = BLOCK_ID*46.080e-6 + j*1.152e-6 - packet_time;
               point.intensity = intensity;
+              point.r = 0;
+              point.g = 0;
+              point.b = 0;
               point.echo = 1;
               point.numecho = 1;
 
