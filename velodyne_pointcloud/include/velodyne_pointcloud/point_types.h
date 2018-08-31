@@ -26,7 +26,16 @@ namespace velodyne_pointcloud
   /** Euclidean Velodyne coordinate, including intensity and ring number. */
   struct PointXYZIR
   {
-    PCL_ADD_POINT4D;                    // quad-word XYZ
+    union EIGEN_ALIGN16 {
+      float data[4];
+      struct {
+        float x;
+        float y;
+        float z;
+        float time;
+      };
+    };
+    PCL_ADD_EIGEN_MAPS_POINT4D;
     float    intensity;                 ///< laser intensity reading
     uint16_t ring;                      ///< laser ring number
     uint16_t echo;
@@ -45,6 +54,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIR,
                                   (float, x, x)
                                   (float, y, y)
                                   (float, z, z)
+                                  (float, time, time)
                                   (float, intensity, intensity)
                                   (uint16_t, ring, ring)
                                   (uint16_t, echo, echo)
