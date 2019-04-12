@@ -160,10 +160,17 @@ namespace velodyne_rawdata
     if (calibration_.num_lasers == 16)
     {
       unpack_vlp16(pkt, pc);
+		//solve time for packet
+		//from manual: timing_offsets[y][x]=\(full_firing_cycle*dataBlockIndex)+(single_firing*dataPointIndex)returntiming_offsets
+		const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
+    	pc.header.stamp = raw->revolution;
       return;
     }
     
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
+	//solve time for packet
+	//from manual: invoffset=-266.112ifdual_modeelse-542.592
+	//timing_offsets[y][x]=\invoffset+(full_firing_cycle*dataBlockIndex)+(single_firing*dataPointIndex)
     uint32_t packet_time_ms = 543;
     float packet_time = 542.592e-6;
     if (dual_echos) {
