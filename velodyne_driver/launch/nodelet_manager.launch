@@ -12,7 +12,7 @@
   <arg name="read_fast" default="false" />
   <arg name="read_once" default="false" />
   <arg name="repeat_delay" default="0.0" />
-  <arg name="rpm" default="600.0" />
+  <arg name="rpm" default="1200.0" />
 
   <!-- start nodelet manager -->
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" />
