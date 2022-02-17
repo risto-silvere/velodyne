@@ -106,26 +106,18 @@ union two_bytes
 
 static const int PACKET_SIZE = 1206;
 static const int BLOCKS_PER_PACKET = 12;
-static const int PACKET_STATUS_SIZE = 4;
+static const int FACTORY_BYTES_SIZE = 2;
 static const int SCANS_PER_PACKET = (SCANS_PER_BLOCK * BLOCKS_PER_PACKET);
 
 /** \brief Raw Velodyne packet.
  *
- *  revolution is described in the device manual as incrementing
- *    (mod 65536) for each physical turn of the device.  Our device
- *    seems to alternate between two different values every third
- *    packet.  One value increases, the other decreases.
- *
- *  \todo figure out if revolution is only present for one of the
- *  two types of status fields
- *
- *  status has either a temperature encoding or the microcode level
+ * Timestamp is the time of the first laser firing of the first block
  */
 typedef struct raw_packet
 {
   raw_block_t blocks[BLOCKS_PER_PACKET];
-  uint16_t revolution;
-  uint8_t status[PACKET_STATUS_SIZE];
+  uint32_t timestamp;
+  uint8_t status[FACTORY_BYTES_SIZE];
 }
 raw_packet_t;
 
