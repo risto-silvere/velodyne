@@ -115,6 +115,15 @@ public:
     cloud.is_dense = static_cast<uint8_t>(config_.is_dense);
   }
 
+  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg)
+  {
+    cloud.header.stamp = packet_msg.stamp;
+    cloud.data.resize(config_.scans_per_packet * cloud.point_step);
+    cloud.width = config_.init_width;
+    cloud.height = config_.init_height;
+    cloud.is_dense = static_cast<uint8_t>(config_.is_dense);
+  }
+
   virtual void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth, const float distance,
                         const float intensity, const float time) = 0;
   virtual void newLine() = 0;

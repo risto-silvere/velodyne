@@ -75,6 +75,9 @@ inline float SQR(float val) { return val*val; }
       config_.min_angle = 0;
       config_.max_angle = 36000;
     }
+
+
+    first_packet_received_ = false;
   }
 
   int RawData::scansPerPacket() const
@@ -89,6 +92,54 @@ inline float SQR(float val) { return val*val; }
     }
   }
 
+  void RawData::processFactoryBytes(const velodyne_msgs::VelodynePacket& pkt){
+    const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
+    switch (raw->return_mode) {
+      case 57:
+        ROS_INFO("Return type is : Dual ");
+        config_.dual_mode = true;
+        break;
+      case 56:
+        ROS_INFO("Return type is : Last");
+        config_.dual_mode = false;
+        break;
+      case 55:
+        ROS_INFO("Return type is : Strongest");
+        config_.dual_mode = false;
+        break;
+      default:
+        ROS_WARN("Unknown return type");
+        break;
+    }
+    switch (raw->product_id) {
+      case 33:
+        config_.model = "32E";
+        break;
+      case 34:
+        config_.model = "VLP16";
+        break;
+      case 36:
+        config_.model = "Puck Hi-Res";
+        break;
+      case 40:
+        config_.model = "32C";
+        break;
+      case 49:
+        config_.model = "Velarray";
+        break;
+      case 161:
+        config_.model = "VLS-128";
+        break;
+      default:
+        config_.model = "Unknown model";
+        break;
+    }
+    ROS_INFO_STREAM("Product id: "<<config_.model);
+    
+  }
+
+
+
   /**
    * Build a timing table for each block/firing. Stores in timing_offsets vector
    */
@@ -96,25 +147,24 @@ inline float SQR(float val) { return val*val; }
     // vlp16    
     if (config_.model == "VLP16"){
       // timing table calculation, from velodyne user manual
-      timing_offsets.resize(12);
+      timing_offsets.resize(BLOCKS_PER_PACKET);
       for (size_t i=0; i < timing_offsets.size(); ++i){
-        timing_offsets[i].resize(32);
+        timing_offsets[i].resize(SCANS_PER_BLOCK);
       }
       // constants
       double full_firing_cycle = 55.296 * 1e-6; // seconds
       double single_firing = 2.304 * 1e-6; // seconds
       double dataBlockIndex, dataPointIndex;
-      bool dual_mode = false;
       // compute timing offsets
       for (size_t x = 0; x < timing_offsets.size(); ++x){
         for (size_t y = 0; y < timing_offsets[x].size(); ++y){
-          if (dual_mode){
-            dataBlockIndex = (x - (x % 2)) + (y / 16);
+          if (config_.dual_mode){
+            dataBlockIndex = (x - (x % 2)) + (y / VLP16_SCANS_PER_FIRING);
           }
           else{
-            dataBlockIndex = (x * 2) + (y / 16);
+            dataBlockIndex = (x * 2) + (y / VLP16_SCANS_PER_FIRING);
           }
-          dataPointIndex = y % 16;
+          dataPointIndex = y % VLP16_SCANS_PER_FIRING;
           //timing_offsets[block][firing]
           timing_offsets[x][y] = (full_firing_cycle * dataBlockIndex) + (single_firing * dataPointIndex);
         }
@@ -123,9 +173,9 @@ inline float SQR(float val) { return val*val; }
     // vlp32
     else if (config_.model == "32C"){
       // timing table calculation, from velodyne user manual
-      timing_offsets.resize(12);
+      timing_offsets.resize(BLOCKS_PER_PACKET);
       for (size_t i=0; i < timing_offsets.size(); ++i){
-        timing_offsets[i].resize(32);
+        timing_offsets[i].resize(SCANS_PER_BLOCK);
       }
       // constants
       double full_firing_cycle = 55.296 * 1e-6; // seconds
@@ -135,7 +185,7 @@ inline float SQR(float val) { return val*val; }
       // compute timing offsets
       for (size_t x = 0; x < timing_offsets.size(); ++x){
         for (size_t y = 0; y < timing_offsets[x].size(); ++y){
-          if (dual_mode){
+          if (config_.dual_mode){
             dataBlockIndex = x / 2;
           }
           else{
@@ -149,9 +199,9 @@ inline float SQR(float val) { return val*val; }
     // hdl32
     else if (config_.model == "32E"){
       // timing table calculation, from velodyne user manual
-      timing_offsets.resize(12);
+      timing_offsets.resize(BLOCKS_PER_PACKET);
       for (size_t i=0; i < timing_offsets.size(); ++i){
-        timing_offsets[i].resize(32);
+        timing_offsets[i].resize(SCANS_PER_BLOCK);
       }
       // constants
       double full_firing_cycle = 46.080 * 1e-6; // seconds
@@ -161,7 +211,7 @@ inline float SQR(float val) { return val*val; }
       // compute timing offsets
       for (size_t x = 0; x < timing_offsets.size(); ++x){
         for (size_t y = 0; y < timing_offsets[x].size(); ++y){
-          if (dual_mode){
+          if (config_.dual_mode){
             dataBlockIndex = x / 2;
           }
           else{
@@ -268,6 +318,12 @@ inline float SQR(float val) { return val*val; }
   {
     using velodyne_pointcloud::LaserCorrection;
     ROS_DEBUG_STREAM("Received packet, time: " << pkt.stamp);
+
+    if(first_packet_received_ == false){
+      processFactoryBytes(pkt);
+      buildTimings();
+      first_packet_received_ = true;
+    }
 
     /** special parsing for the VLP16 **/
     if (calibration_.num_lasers == 16)
@@ -413,8 +469,8 @@ inline float SQR(float val) { return val*val; }
   
           float min_intensity = corrections.min_intensity;
           float max_intensity = corrections.max_intensity;
-  
-          intensity = raw->blocks[i].data[k+2];
+          uint8_t intensity_uint = block.data[k+2]; 
+          intensity = static_cast<float>(intensity_uint);
   
           float focal_offset = 256 
                              * (1 - corrections.focal_distance / 13100) 
@@ -425,7 +481,23 @@ inline float SQR(float val) { return val*val; }
           intensity = (intensity < min_intensity) ? min_intensity : intensity;
           intensity = (intensity > max_intensity) ? max_intensity : intensity;
 
-          data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time);
+
+          // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
+          if(config_.dual_mode && (i%2 == 1)){
+            const raw_block_t &block = raw->blocks[i];
+            union two_bytes previous_two_bytes;
+            previous_two_bytes.bytes[0] = raw->blocks[i-1].data[k];
+            previous_two_bytes.bytes[1] = raw->blocks[i-1].data[k+1];
+
+            // Same data means we have only one echo 
+            if (previous_two_bytes.uint == tmp.uint)
+              data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[i].rotation, nanf(""), nanf(""), time);
+            else
+              data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time);   
+          }
+          else{
+            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time);
+          }
         }
       }
       data.newLine();

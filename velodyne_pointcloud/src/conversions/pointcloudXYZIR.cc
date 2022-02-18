@@ -33,6 +33,16 @@ namespace velodyne_pointcloud
     iter_time = sensor_msgs::PointCloud2Iterator<float >(cloud, "time");
   }
 
+  void PointcloudXYZIR::setup(const velodyne_msgs::VelodynePacket & packet_msg){
+    DataContainerBase::setup(packet_msg);
+    iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
+    iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
+    iter_z = sensor_msgs::PointCloud2Iterator<float>(cloud, "z");
+    iter_intensity = sensor_msgs::PointCloud2Iterator<float>(cloud, "intensity");
+    iter_ring = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "ring");
+    iter_time = sensor_msgs::PointCloud2Iterator<float >(cloud, "time");
+  }
+
   void PointcloudXYZIR::newLine()
   {}
 

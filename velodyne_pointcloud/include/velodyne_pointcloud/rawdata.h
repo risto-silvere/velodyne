@@ -117,7 +117,8 @@ typedef struct raw_packet
 {
   raw_block_t blocks[BLOCKS_PER_PACKET];
   uint32_t timestamp;
-  uint8_t status[FACTORY_BYTES_SIZE];
+  uint8_t return_mode;
+  uint8_t product_id;
 }
 raw_packet_t;
 
@@ -173,6 +174,8 @@ private:
     double min_range;             ///< minimum range to publish
     int min_angle;                ///< minimum angle to publish
     int max_angle;                ///< maximum angle to publish
+    
+    bool dual_mode;
 
     double tmp_min_angle;
     double tmp_max_angle;
@@ -189,6 +192,10 @@ private:
 
   // timing offset lookup table
   std::vector< std::vector<float> > timing_offsets;
+
+  bool first_packet_received_;
+
+  void processFactoryBytes(const velodyne_msgs::VelodynePacket& pkt);
 
   /** \brief setup per-point timing offsets
    * 
