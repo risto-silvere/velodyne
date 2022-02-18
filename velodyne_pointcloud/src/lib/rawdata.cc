@@ -280,11 +280,9 @@ inline float SQR(float val) { return val*val; }
   }
 
   /** Set up for offline operation */
-  int RawData::setupOffline(std::string calibration_file, double max_range_, double min_range_)
+  int RawData::setupOffline(std::string calibration_file, double max_range_, double min_range_, double view_direction, double view_width)
   {
-
-    config_.max_range = max_range_;
-    config_.min_range = min_range_;
+    setParameters(min_range_,max_range_,view_direction,view_width);
     ROS_INFO_STREAM("data ranges to publish: ["
       << config_.min_range << ", "
       << config_.max_range << "]");
@@ -305,6 +303,7 @@ inline float SQR(float val) { return val*val; }
       cos_rot_table_[rot_index] = cosf(rotation);
       sin_rot_table_[rot_index] = sinf(rotation);
     }
+    first_packet_received_ = false;
     return 0;
   }
 
@@ -481,7 +480,10 @@ inline float SQR(float val) { return val*val; }
           intensity = (intensity < min_intensity) ? min_intensity : intensity;
           intensity = (intensity > max_intensity) ? max_intensity : intensity;
 
-
+          uint16_t num_echo = 1;
+          uint16_t echo = 1;
+          uint8_t r=0,g=0,b=0,a=0;
+          
           // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
           if(config_.dual_mode && (i%2 == 1)){
             const raw_block_t &block = raw->blocks[i];

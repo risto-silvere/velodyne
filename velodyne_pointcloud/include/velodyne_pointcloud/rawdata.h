@@ -155,7 +155,7 @@ public:
    * @returns 0 if successful;
    *           errno value for failure
    */
-  int setupOffline(std::string calibration_file, double max_range_, double min_range_);
+  int setupOffline(std::string calibration_file, double max_range_, double min_range_ , double view_direction = 0.0, double view_width = 2*M_PI);
 
   void unpack(const velodyne_msgs::VelodynePacket& pkt, DataContainerBase& data,
               const ros::Time& scan_start_time);
