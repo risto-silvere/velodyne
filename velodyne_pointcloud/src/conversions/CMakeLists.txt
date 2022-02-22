@@ -29,3 +29,12 @@ install(TARGETS transform_nodelet
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+
+add_library(velodyne_point_types pointcloudXYZTIRERGBAN.cc organized_cloudXYZTIRERGBAN.cc)
+add_dependencies(velodyne_point_types ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(velodyne_point_types velodyne_rawdata
+                      ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES})
+install(TARGETS velodyne_point_types
+        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
