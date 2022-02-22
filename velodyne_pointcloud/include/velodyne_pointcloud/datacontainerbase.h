@@ -115,9 +115,10 @@ public:
     cloud.is_dense = static_cast<uint8_t>(config_.is_dense);
   }
 
-  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg)
+  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg, uint32_t seq)
   {
     cloud.header.stamp = packet_msg.stamp;
+    cloud.header.seq = seq;
     cloud.data.resize(config_.scans_per_packet * cloud.point_step);
     cloud.width = config_.init_width;
     cloud.height = config_.init_height;
@@ -125,7 +126,9 @@ public:
   }
 
   virtual void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth, const float distance,
-                        const float intensity, const float time) = 0;
+                        const float intensity, const float time, 
+                        const uint16_t echo, const uint8_t r, const uint8_t g, 
+                        const uint8_t b, const uint8_t a,const uint16_t num_echo) = 0;
   virtual void newLine() = 0;
 
   const sensor_msgs::PointCloud2& finishCloud()

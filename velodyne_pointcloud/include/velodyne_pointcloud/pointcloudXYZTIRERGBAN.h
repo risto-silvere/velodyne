@@ -42,15 +42,19 @@ public:
                   const std::string& fixed_frame, const unsigned int scans_per_block,
                   boost::shared_ptr<tf::TransformListener> tf_ptr = boost::shared_ptr<tf::TransformListener>());
 
-  virtual void newLine();
+  virtual ~PointcloudXYZTIRERGBAN();
+
 
   virtual void setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg);
-  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg);
+  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg,  const uint32_t & seq);
 
-  virtual void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth,
+  virtual void newLine();
+
+
+  void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth,
                         const float distance, const float intensity, const float time, 
-                        const uint16_t echo,const uint16_t num_echo, const uint8_t r, const uint8_t g, 
-                        const uint8_t b, const uint8_t a);
+                        const uint16_t echo, const uint8_t r, const uint8_t g, 
+                        const uint8_t b, const uint8_t a,const uint16_t num_echo);
 
   sensor_msgs::PointCloud2Iterator<float> iter_x, iter_y, iter_z, iter_intensity, iter_time;
   sensor_msgs::PointCloud2Iterator<uint16_t> iter_ring, iter_echo, iter_num_echo;

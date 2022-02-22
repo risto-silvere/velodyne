@@ -49,7 +49,7 @@ public:
   virtual void newLine();
 
   virtual void setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg);
-  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg);
+  virtual void setup(const velodyne_msgs::VelodynePacket& packet_msg, const uint32_t & seq);
 
 
   virtual void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth, const float distance,

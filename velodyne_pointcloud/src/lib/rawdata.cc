@@ -80,7 +80,7 @@ inline float SQR(float val) { return val*val; }
     first_packet_received_ = false;
   }
 
-  int RawData::scansPerPacket() const
+  unsigned int RawData::scansPerPacket() const
   {
     if( calibration_.num_lasers == 16)
     {
@@ -378,7 +378,7 @@ inline float SQR(float val) { return val*val; }
           if (tmp.uint == 0) // no valid laser beam return
           {
             // call to addPoint is still required since output could be organized
-            data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[i].rotation, nanf(""), nanf(""), time);
+            data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[i].rotation, nanf(""), nanf(""), time,0,0,0,0,0,0);
             continue;
           }
 
@@ -480,26 +480,39 @@ inline float SQR(float val) { return val*val; }
           intensity = (intensity < min_intensity) ? min_intensity : intensity;
           intensity = (intensity > max_intensity) ? max_intensity : intensity;
 
-          uint16_t num_echo = 1;
-          uint16_t echo = 1;
+          uint16_t echo,num_echo;
           uint8_t r=0,g=0,b=0,a=0;
-          
-          // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
-          if(config_.dual_mode && (i%2 == 1)){
-            const raw_block_t &block = raw->blocks[i];
-            union two_bytes previous_two_bytes;
-            previous_two_bytes.bytes[0] = raw->blocks[i-1].data[k];
-            previous_two_bytes.bytes[1] = raw->blocks[i-1].data[k+1];
 
-            // Same data means we have only one echo 
-            if (previous_two_bytes.uint == tmp.uint)
-              data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[i].rotation, nanf(""), nanf(""), time);
-            else
-              data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time);   
+          if(config_.dual_mode){
+            num_echo = 2;
+            // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
+            if (i%2==1)
+            {
+              echo = 2;
+
+              union two_bytes previous_two_bytes;
+              previous_two_bytes.bytes[0] = raw->blocks[i-1].data[k];
+              previous_two_bytes.bytes[1] = raw->blocks[i-1].data[k+1];
+
+              // Same data means we have only one echo 
+              if (previous_two_bytes.uint == tmp.uint)
+              {
+                x_coord = nanf("");
+                y_coord = nanf("");
+                z_coord = nanf("");
+                distance = nanf("");
+                intensity = nanf("");
+              }
+            }
+            else{
+              echo = 1;
+            }
           }
           else{
-            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time);
+            num_echo = 1;
+            echo = 1;
           }
+          data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
         }
       }
       data.newLine();
@@ -684,7 +697,37 @@ inline float SQR(float val) { return val*val; }
             if (timing_offsets.size())
               time = timing_offsets[block][firing * 16 + dsr] + time_diff_start_to_this_packet;
 
-            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time);
+            uint16_t echo,num_echo;
+            uint8_t r=0,g=0,b=0,a=0;
+
+            if(config_.dual_mode){
+              num_echo = 2;
+              // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
+              if (block%2==1){
+                echo = 2;
+
+                union two_bytes previous_two_bytes;
+                previous_two_bytes.bytes[0] = raw->blocks[block-1].data[k];
+                previous_two_bytes.bytes[1] = raw->blocks[block-1].data[k+1];
+
+                // Same data means we have only one echo 
+                if (previous_two_bytes.uint == tmp.uint){
+                  x_coord = nanf("");
+                  y_coord = nanf("");
+                  z_coord = nanf("");
+                  distance = nanf("");
+                  intensity = nanf("");
+                }
+              }
+              else{
+                echo = 1;
+              }
+            }
+            else{
+              num_echo = 1;
+              echo = 1;
+            }
+          data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
           }
         }
         data.newLine();

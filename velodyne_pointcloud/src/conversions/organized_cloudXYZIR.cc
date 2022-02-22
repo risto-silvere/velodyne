@@ -44,8 +44,8 @@ namespace velodyne_pointcloud
     iter_time = sensor_msgs::PointCloud2Iterator<float >(cloud, "time");
   }
 
-  void OrganizedCloudXYZIR::setup(const velodyne_msgs::VelodynePacket & packet_msg){
-    DataContainerBase::setup(packet_msg);
+  void OrganizedCloudXYZIR::setup(const velodyne_msgs::VelodynePacket & packet_msg, const uint32_t & seq){
+    DataContainerBase::setup(packet_msg, seq);
     iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
     iter_z = sensor_msgs::PointCloud2Iterator<float>(cloud, "z");
@@ -71,7 +71,8 @@ namespace velodyne_pointcloud
       *(iter_z+ring) = z;
       *(iter_intensity+ring) = intensity;
       *(iter_ring+ring) = ring;
-      *(iter_time+time) = time;
+      *(iter_time+ring) = time;
+      
     }
     else
     {
@@ -80,7 +81,7 @@ namespace velodyne_pointcloud
       *(iter_z+ring) = nanf("");
       *(iter_intensity+ring) = nanf("");
       *(iter_ring+ring) = ring;
-      *(iter_time+time) = time;
+      *(iter_time+ring) = time;
     }
   }
 }

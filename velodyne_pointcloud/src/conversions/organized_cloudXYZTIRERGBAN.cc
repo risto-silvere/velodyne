@@ -1,18 +1,17 @@
 
+#include <velodyne_pointcloud/organized_cloudXYZTIRERGBAN.h>
 
-
-#include <velodyne_pointcloud/pointcloudXYZTIRERGBAN.h>
-
-namespace velodyne_pointcloud 
+namespace velodyne_pointcloud
 {
 
-  PointcloudXYZTIRERGBAN::PointcloudXYZTIRERGBAN(
-    const double max_range, const double min_range,
-    const std::string& target_frame, const std::string& fixed_frame,
-    const unsigned int scans_per_block, boost::shared_ptr<tf::TransformListener> tf_ptr)
+  OrganizedCloudXYZTIRERGBAN::OrganizedCloudXYZTIRERGBAN(
+      const double max_range, const double min_range,
+      const std::string& target_frame, const std::string& fixed_frame,
+      const unsigned int num_lasers, const unsigned int scans_per_block,
+      boost::shared_ptr<tf::TransformListener> tf_ptr)
     : DataContainerBase(
         max_range, min_range, target_frame, fixed_frame,
-        0, 1, true, scans_per_block, tf_ptr, 12,
+        num_lasers, 0, false, scans_per_block, tf_ptr, 12,
         "x", 1, sensor_msgs::PointField::FLOAT32,
         "y", 1, sensor_msgs::PointField::FLOAT32,
         "z", 1, sensor_msgs::PointField::FLOAT32,
@@ -29,12 +28,30 @@ namespace velodyne_pointcloud
         iter_intensity(cloud, "intensity"), iter_ring(cloud, "ring"), iter_echo(cloud, "echo"), 
         iter_r(cloud, "r"), iter_g(cloud, "g"), iter_b(cloud, "b"), iter_a(cloud, "a"), 
         iter_num_echo(cloud, "num_echo")
-    {};
+  {
+  }
 
-  PointcloudXYZTIRERGBAN::~PointcloudXYZTIRERGBAN() {}
+  OrganizedCloudXYZTIRERGBAN::~OrganizedCloudXYZTIRERGBAN() {}
 
 
-  void PointcloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg){
+  void OrganizedCloudXYZTIRERGBAN::newLine()
+  {
+    iter_x = iter_x + config_.init_width;
+    iter_y = iter_y + config_.init_width;
+    iter_z = iter_z + config_.init_width;
+    iter_ring = iter_ring + config_.init_width;
+    iter_intensity = iter_intensity + config_.init_width;
+    iter_time = iter_time + config_.init_width;
+    iter_echo = iter_echo + config_.init_width;
+    iter_r = iter_r + config_.init_width;
+    iter_g = iter_g + config_.init_width;
+    iter_b = iter_b + config_.init_width;
+    iter_a = iter_a + config_.init_width;
+    iter_num_echo = iter_num_echo + config_.init_width;
+    ++cloud.height;
+  }
+
+  void OrganizedCloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg){
     DataContainerBase::setup(scan_msg);
     iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
@@ -48,11 +65,9 @@ namespace velodyne_pointcloud
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
     iter_num_echo = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "num_echo");
-
-
   }
 
-  void PointcloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodynePacket & packet_msg, const uint32_t & seq){
+  void OrganizedCloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodynePacket & packet_msg, const uint32_t & seq){
     DataContainerBase::setup(packet_msg, seq);
     iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
@@ -67,48 +82,49 @@ namespace velodyne_pointcloud
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
     iter_num_echo = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "num_echo");
   }
-
-  void PointcloudXYZTIRERGBAN::newLine()
-  {}
-
-  void PointcloudXYZTIRERGBAN::addPoint(float x, float y, float z, const uint16_t ring, const uint16_t /*azimuth*/, const float distance, 
-                                        const float intensity, const float time, const uint16_t echo, const uint8_t r, const uint8_t g, 
-                                        const uint8_t b, const uint8_t a,const uint16_t num_echo)
+  void OrganizedCloudXYZTIRERGBAN::addPoint(float x, float y, float z,
+    const uint16_t ring, const uint16_t /*azimuth*/, const float distance, const float intensity, const float time, 
+    const uint16_t echo, const uint8_t r, const uint8_t g, 
+    const uint8_t b, const uint8_t a, const uint16_t num_echo)
   {
-    if(!pointInRange(distance)) return;
-
-    // convert polar coordinates to Euclidean XYZ
-
-    if(config_.transform)
-      transformPoint(x, y, z);
-
-    *iter_x = x;
-    *iter_y = y;
-    *iter_z = z;
-    *iter_ring = ring;
-    *iter_intensity = intensity;
-    *iter_time = time;
-    *iter_echo = echo;
-    *iter_r = r;
-    *iter_g = g;
-    *iter_b = b;
-    *iter_a = a;
-    *iter_num_echo = num_echo;
-
-
-    ++cloud.width;
-    ++iter_x;
-    ++iter_y;
-    ++iter_z;
-    ++iter_ring;
-    ++iter_intensity;
-    ++iter_time;
-    ++iter_echo;
-    ++iter_r;
-    ++iter_g;
-    ++iter_b;
-    ++iter_a;
-    ++iter_num_echo;
+    /** The laser values are not ordered, the organized structure
+     * needs ordered neighbour points. The right order is defined
+     * by the laser_ring value.
+     * To keep the right ordering, the filtered values are set to
+     * NaN.
+     */
+    if (pointInRange(distance))
+    {
+      if(config_.transform)
+        transformPoint(x, y, z);
+      *(iter_x+ring) = x;
+      *(iter_y+ring) = y;
+      *(iter_z+ring) = z;
+      *(iter_intensity+ring) = intensity;
+      *(iter_ring+ring) = ring;
+      *(iter_time+ring) = time;
+      *(iter_echo+ring) = echo;
+      *(iter_r+ring) = r;
+      *(iter_g+ring) = g;
+      *(iter_b+ring) = b;
+      *(iter_a+ring) = a;
+      *(iter_num_echo+ring) = num_echo;      
+    }
+    else
+    {
+      *(iter_x+ring) = nanf("");
+      *(iter_y+ring) = nanf("");
+      *(iter_z+ring) = nanf("");
+      *(iter_intensity+ring) = nanf("");
+      *(iter_ring+ring) = ring;
+      *(iter_time+ring) = time;
+      *(iter_echo+ring) = echo;
+      *(iter_r+ring) = r;
+      *(iter_g+ring) = g;
+      *(iter_b+ring) = b;
+      *(iter_a+ring) = a;
+      *(iter_num_echo+ring) = num_echo;     
+    }
   }
 }
 
