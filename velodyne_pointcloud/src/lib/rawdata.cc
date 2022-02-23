@@ -217,7 +217,7 @@ inline float SQR(float val) { return val*val; }
           else{
             dataBlockIndex = x;
           }
-          dataPointIndex = y / 2;
+          dataPointIndex = y;
           timing_offsets[x][y] = (full_firing_cycle * dataBlockIndex) + (single_firing * dataPointIndex);
         }
       }
@@ -227,14 +227,14 @@ inline float SQR(float val) { return val*val; }
       ROS_WARN("Timings not supported for model %s", config_.model.c_str());
     }
 
-    if (timing_offsets.size()){
-      // ROS_INFO("VELODYNE TIMING TABLE:");
+    if (timing_offsets.size()){/*
+      ROS_INFO("VELODYNE TIMING TABLE:");
       for (size_t x = 0; x < timing_offsets.size(); ++x){
         for (size_t y = 0; y < timing_offsets[x].size(); ++y){
           printf("%04.3f ", timing_offsets[x][y] * 1e6);
         }
         printf("\n");
-      }
+      }*/
       return true;
     }
     else{
@@ -283,7 +283,7 @@ inline float SQR(float val) { return val*val; }
   int RawData::setupOffline(std::string calibration_file, double max_range_, double min_range_, double view_direction, double view_width)
   {
     setParameters(min_range_,max_range_,view_direction,view_width);
-    ROS_INFO_STREAM("data ranges to publish: ["
+    ROS_DEBUG_STREAM("data ranges to publish: ["
       << config_.min_range << ", "
       << config_.max_range << "]");
 
