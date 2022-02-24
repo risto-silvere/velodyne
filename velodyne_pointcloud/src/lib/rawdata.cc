@@ -484,28 +484,43 @@ inline float SQR(float val) { return val*val; }
           uint8_t r=0,g=0,b=0,a=0;
 
           if(config_.dual_mode){
-            num_echo = 2;
-            // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
-            if (i%2==1)
+            // If in dual mode two consecutive blocks are the two echoes from one pulse  
+            // check for duplicates and add empty points in that case
+            union two_bytes same_pulse_other_two_bytes;
+            if (i%2==0)
             {
-              echo = 2;
-
-              union two_bytes previous_two_bytes;
-              previous_two_bytes.bytes[0] = raw->blocks[i-1].data[k];
-              previous_two_bytes.bytes[1] = raw->blocks[i-1].data[k+1];
-
-              // Same data means we have only one echo 
-              if (previous_two_bytes.uint == tmp.uint)
+              same_pulse_other_two_bytes.bytes[0] = raw->blocks[i+1].data[k];
+              same_pulse_other_two_bytes.bytes[1] = raw->blocks[i+1].data[k+1];
+              // Same data means we have only one echo, make first copy of that one echo disappear
+              if (same_pulse_other_two_bytes.uint == tmp.uint)
               {
                 x_coord = nanf("");
                 y_coord = nanf("");
                 z_coord = nanf("");
                 distance = nanf("");
                 intensity = nanf("");
+                echo = 1;
+                num_echo = 1;
+              }
+              else{
+                echo = 2;
+                num_echo = 2;
               }
             }
             else{
-              echo = 1;
+              same_pulse_other_two_bytes.bytes[0] = raw->blocks[i-1].data[k];
+              same_pulse_other_two_bytes.bytes[1] = raw->blocks[i-1].data[k+1];
+              if (same_pulse_other_two_bytes.uint == tmp.uint)
+              {
+                echo = 1;
+                num_echo = 1;
+              }
+              else{
+                echo = 1;
+                num_echo = 2;
+              }
+
+              
             }
           }
           else{
@@ -701,29 +716,41 @@ inline float SQR(float val) { return val*val; }
             uint8_t r=0,g=0,b=0,a=0;
 
             if(config_.dual_mode){
-              num_echo = 2;
-              // If in dual mode every other block is the second return, check for duplicates and add empty points in that case
-              if (block%2==1){
-                echo = 2;
-
-                union two_bytes previous_two_bytes;
-                previous_two_bytes.bytes[0] = raw->blocks[block-1].data[k];
-                previous_two_bytes.bytes[1] = raw->blocks[block-1].data[k+1];
-
-                // Same data means we have only one echo 
-                if (previous_two_bytes.uint == tmp.uint){
+              // If in dual mode two consecutive blocks are the two echoes from one pulse  
+              // check for duplicates and add empty points in that case
+              union two_bytes same_pulse_other_two_bytes;
+              if (block%2==0) {
+                same_pulse_other_two_bytes.bytes[0] = raw->blocks[block+1].data[k];
+                same_pulse_other_two_bytes.bytes[1] = raw->blocks[block+1].data[k+1];
+                // Same data means we have only one echo, make first copy of that one echo disappear
+                if (same_pulse_other_two_bytes.uint == tmp.uint) {
                   x_coord = nanf("");
                   y_coord = nanf("");
                   z_coord = nanf("");
                   distance = nanf("");
                   intensity = nanf("");
+                  echo = 1;
+                  num_echo = 1;
+                }
+                else {
+                  echo = 2;
+                  num_echo = 2;
                 }
               }
-              else{
-                echo = 1;
+              else {
+                same_pulse_other_two_bytes.bytes[0] = raw->blocks[block-1].data[k];
+                same_pulse_other_two_bytes.bytes[1] = raw->blocks[block-1].data[k+1];
+                if (same_pulse_other_two_bytes.uint == tmp.uint) {
+                  echo = 1;
+                  num_echo = 1;
+                }
+                else {
+                  echo = 1;
+                  num_echo = 2;
+                }
               }
             }
-            else{
+            else {
               num_echo = 1;
               echo = 1;
             }
