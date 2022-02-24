@@ -122,6 +122,31 @@ typedef struct raw_packet
 }
 raw_packet_t;
 
+
+/** \brief Point struct
+ *
+ * struct to hold point information. Used for temporary storage of points when processing dual echo data
+ */
+typedef struct point_data
+{
+  float x;
+  float y;
+  float z;
+  float time;
+  float intensity;
+  uint16_t ring;
+  uint16_t echo;
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t a; 
+  uint16_t num_echo;
+  uint16_t azimuth;
+  float distance;
+  union two_bytes raw_bytes;
+}
+point_data_t;
+
 /** \brief Velodyne data conversion class */
 class RawData
 {

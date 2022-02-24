@@ -206,7 +206,7 @@ inline float SQR(float val) { return val*val; }
       // constants
       double full_firing_cycle = 46.080 * 1e-6; // seconds
       double single_firing = 1.152 * 1e-6; // seconds
-      double dataBlockIndex, dataPointIndex;
+      int dataBlockIndex, dataPointIndex;
       bool dual_mode = false;
       // compute timing offsets
       for (size_t x = 0; x < timing_offsets.size(); ++x){
@@ -331,32 +331,35 @@ inline float SQR(float val) { return val*val; }
       return;
     }
 
+    std::vector<point_data_t> temp_points;
+    temp_points.resize(SCANS_PER_BLOCK);
+
     float time_diff_start_to_this_packet = (pkt.stamp - scan_start_time).toSec();
     
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
 
-    for (int i = 0; i < BLOCKS_PER_PACKET; i++) {
-
+    for (int block_idx = 0; block_idx < BLOCKS_PER_PACKET; block_idx++) {
+      temp_points.clear();
       // upper bank lasers are numbered [0..31]
       // NOTE: this is a change from the old velodyne_common implementation
 
       int bank_origin = 0;
-      if (raw->blocks[i].header == LOWER_BANK) {
+      if (raw->blocks[block_idx].header == LOWER_BANK) {
         // lower bank lasers are [32..63]
         bank_origin = 32;
       }
 
-      for (int j = 0, k = 0; j < SCANS_PER_BLOCK; j++, k += RAW_SCAN_SIZE) {
+      for (int laser_idx = 0, k = 0; laser_idx < SCANS_PER_BLOCK; laser_idx++, k += RAW_SCAN_SIZE) {
         
         float x, y, z;
         float intensity;
-        const uint8_t laser_number  = j + bank_origin;
+        const uint8_t laser_number  = laser_idx + bank_origin;
         float time = 0;
 
         const LaserCorrection &corrections = calibration_.laser_corrections[laser_number];
 
         /** Position Calculation */
-        const raw_block_t &block = raw->blocks[i];
+        const raw_block_t &block = raw->blocks[block_idx];
         union two_bytes tmp;
         tmp.bytes[0] = block.data[k];
         tmp.bytes[1] = block.data[k+1];
@@ -367,19 +370,12 @@ inline float SQR(float val) { return val*val; }
              && block.rotation <= config_.max_angle
              && config_.min_angle < config_.max_angle)
              ||(config_.min_angle > config_.max_angle 
-             && (raw->blocks[i].rotation <= config_.max_angle 
-             || raw->blocks[i].rotation >= config_.min_angle))){
+             && (raw->blocks[block_idx].rotation <= config_.max_angle 
+             || raw->blocks[block_idx].rotation >= config_.min_angle))){
 
           if (timing_offsets.size())
           {
-            time = timing_offsets[i][j] + time_diff_start_to_this_packet;
-          }
-
-          if (tmp.uint == 0) // no valid laser beam return
-          {
-            // call to addPoint is still required since output could be organized
-            data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[i].rotation, nanf(""), nanf(""), time,0,0,0,0,0,0);
-            continue;
+            time = timing_offsets[block_idx][laser_idx] + time_diff_start_to_this_packet;
           }
 
           float distance = tmp.uint * calibration_.distance_resolution_m;
@@ -485,52 +481,55 @@ inline float SQR(float val) { return val*val; }
 
           if(config_.dual_mode){
             // If in dual mode two consecutive blocks are the two echoes from one pulse  
-            // check for duplicates and add empty points in that case
-            union two_bytes same_pulse_other_two_bytes;
-            if (i%2==0)
-            {
-              same_pulse_other_two_bytes.bytes[0] = raw->blocks[i+1].data[k];
-              same_pulse_other_two_bytes.bytes[1] = raw->blocks[i+1].data[k+1];
-              // Same data means we have only one echo, make first copy of that one echo disappear
-              if (same_pulse_other_two_bytes.uint == tmp.uint)
-              {
-                x_coord = nanf("");
-                y_coord = nanf("");
-                z_coord = nanf("");
-                distance = nanf("");
-                intensity = nanf("");
-                echo = 1;
-                num_echo = 1;
-              }
-              else{
-                echo = 2;
-                num_echo = 2;
-              }
-            }
-            else{
-              same_pulse_other_two_bytes.bytes[0] = raw->blocks[i-1].data[k];
-              same_pulse_other_two_bytes.bytes[1] = raw->blocks[i-1].data[k+1];
-              if (same_pulse_other_two_bytes.uint == tmp.uint)
-              {
-                echo = 1;
-                num_echo = 1;
-              }
-              else{
-                echo = 1;
-                num_echo = 2;
-              }
+            // to keep the output in 
+              two_bytes same_pulse_other_two_bytes;
 
-              
+            if (block_idx%2==0)
+            {
+              // When processing dual echo, only save the data when processing first block (contains last echo)
+              temp_points[laser_idx] ={.x=x_coord,.y=y_coord,.z=z_coord,.time=time,.intensity=intensity,.ring=static_cast<uint16_t>(corrections.laser_ring),.echo=0,.r=r,.g=g,.b=b,.a=a,num_echo=0,
+                                        .azimuth=raw->blocks[block_idx].rotation,.distance=distance,.raw_bytes=tmp};
+            }
+            else {
+
+              // When processing second echo, do comparison with the first echo to determine number of echos etc. 
+              // Same data in the raw data bytes means we have only one echo, add only one real point
+              if (temp_points[laser_idx].raw_bytes.uint == tmp.uint) {
+                echo = 1;
+                num_echo = 1;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
+                // Add empty point in case we use organized point cloud container
+                data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[block_idx].rotation, nanf(""), nanf(""), time,echo,r,g,b,a,num_echo);
+
+              }
+              else {
+                // We have 2 echoes, add both points
+                echo = 1;
+                num_echo = 2;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
+                temp_points[laser_idx].echo = 2;
+                temp_points[laser_idx].num_echo = 2;
+                data.addPoint(temp_points[laser_idx].x,temp_points[laser_idx].y,temp_points[laser_idx].z,temp_points[laser_idx].ring,temp_points[laser_idx].azimuth,temp_points[laser_idx].distance,temp_points[laser_idx].intensity,temp_points[laser_idx].time,temp_points[laser_idx].echo,temp_points[laser_idx].r,temp_points[laser_idx].g,temp_points[laser_idx].b,temp_points[laser_idx].a,temp_points[laser_idx].num_echo);
+              }
             }
           }
           else{
             num_echo = 1;
             echo = 1;
+            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
           }
-          data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[i].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
         }
       }
-      data.newLine();
+      if (config_.dual_mode) {
+        //Add new line after processing both echoes of one laser pulse
+        if (block_idx%2==1) {
+          data.newLine();
+        }
+      }
+      else {
+        data.newLine();
+      }
+      
     }
   }
   
@@ -554,27 +553,31 @@ inline float SQR(float val) { return val*val; }
 
     const raw_packet_t *raw = (const raw_packet_t *) &pkt.data[0];
 
-    for (int block = 0; block < BLOCKS_PER_PACKET; block++) {
+    std::vector<point_data_t> temp_points;
+    temp_points.resize(SCANS_PER_BLOCK);
+
+
+    for (int block_idx = 0; block_idx < BLOCKS_PER_PACKET; block_idx++) {
 
       // ignore packets with mangled or otherwise different contents
-      if (UPPER_BANK != raw->blocks[block].header) {
+      if (UPPER_BANK != raw->blocks[block_idx].header) {
         // Do not flood the log with messages, only issue at most one
         // of these warnings per minute.
         ROS_WARN_STREAM_THROTTLE(60, "skipping invalid VLP-16 packet: block "
-                                 << block << " header value is "
-                                 << raw->blocks[block].header);
+                                 << block_idx << " header value is "
+                                 << raw->blocks[block_idx].header);
         return;                         // bad packet: skip the rest
       }
 
       // Calculate difference between current and next block's azimuth angle.
-      azimuth = (float)(raw->blocks[block].rotation);
-      if (block < (BLOCKS_PER_PACKET-1)){
-	raw_azimuth_diff = raw->blocks[block+1].rotation - raw->blocks[block].rotation;
+      azimuth = (float)(raw->blocks[block_idx].rotation);
+      if (block_idx < (BLOCKS_PER_PACKET-1)){
+	raw_azimuth_diff = raw->blocks[block_idx+1].rotation - raw->blocks[block_idx].rotation;
         azimuth_diff = (float)((36000 + raw_azimuth_diff)%36000);
 	// some packets contain an angle overflow where azimuth_diff < 0 
-	if(raw_azimuth_diff < 0)//raw->blocks[block+1].rotation - raw->blocks[block].rotation < 0)
+	if(raw_azimuth_diff < 0)//raw->blocks[block_idx+1].rotation - raw->blocks[block_idx].rotation < 0)
 	  {
-	    ROS_WARN_STREAM_THROTTLE(60, "Packet containing angle overflow, first angle: " << raw->blocks[block].rotation << " second angle: " << raw->blocks[block+1].rotation);
+	    ROS_WARN_STREAM_THROTTLE(60, "Packet containing angle overflow, first angle: " << raw->blocks[block_idx].rotation << " second angle: " << raw->blocks[block_idx+1].rotation);
 	    // if last_azimuth_diff was not zero, we can assume that the velodyne's speed did not change very much and use the same difference
 	    if(last_azimuth_diff > 0){
 	      azimuth_diff = last_azimuth_diff;
@@ -596,8 +599,8 @@ inline float SQR(float val) { return val*val; }
 
           /** Position Calculation */
           union two_bytes tmp;
-          tmp.bytes[0] = raw->blocks[block].data[k];
-          tmp.bytes[1] = raw->blocks[block].data[k+1];
+          tmp.bytes[0] = raw->blocks[block_idx].data[k];
+          tmp.bytes[1] = raw->blocks[block_idx].data[k+1];
           
           /** correct for the laser rotation as a function of timing during the firings **/
           azimuth_corrected_f = azimuth + (azimuth_diff * ((dsr*VLP16_DSR_TOFFSET) + (firing*VLP16_FIRING_TOFFSET)) / VLP16_BLOCK_TDURATION);
@@ -699,7 +702,7 @@ inline float SQR(float val) { return val*val; }
             float min_intensity = corrections.min_intensity;
             float max_intensity = corrections.max_intensity;
     
-            intensity = raw->blocks[block].data[k+2];
+            intensity = raw->blocks[block_idx].data[k+2];
     
             float focal_offset = 256 * SQR(1 - corrections.focal_distance / 13100);
             float focal_slope = corrections.focal_slope;
@@ -710,55 +713,60 @@ inline float SQR(float val) { return val*val; }
   
             float time = 0;
             if (timing_offsets.size())
-              time = timing_offsets[block][firing * 16 + dsr] + time_diff_start_to_this_packet;
+              time = timing_offsets[block_idx][firing * 16 + dsr] + time_diff_start_to_this_packet;
 
             uint16_t echo,num_echo;
             uint8_t r=0,g=0,b=0,a=0;
 
-            if(config_.dual_mode){
-              // If in dual mode two consecutive blocks are the two echoes from one pulse  
-              // check for duplicates and add empty points in that case
-              union two_bytes same_pulse_other_two_bytes;
-              if (block%2==0) {
-                same_pulse_other_two_bytes.bytes[0] = raw->blocks[block+1].data[k];
-                same_pulse_other_two_bytes.bytes[1] = raw->blocks[block+1].data[k+1];
-                // Same data means we have only one echo, make first copy of that one echo disappear
-                if (same_pulse_other_two_bytes.uint == tmp.uint) {
-                  x_coord = nanf("");
-                  y_coord = nanf("");
-                  z_coord = nanf("");
-                  distance = nanf("");
-                  intensity = nanf("");
-                  echo = 1;
-                  num_echo = 1;
-                }
-                else {
-                  echo = 2;
-                  num_echo = 2;
-                }
-              }
-              else {
-                same_pulse_other_two_bytes.bytes[0] = raw->blocks[block-1].data[k];
-                same_pulse_other_two_bytes.bytes[1] = raw->blocks[block-1].data[k+1];
-                if (same_pulse_other_two_bytes.uint == tmp.uint) {
-                  echo = 1;
-                  num_echo = 1;
-                }
-                else {
-                  echo = 1;
-                  num_echo = 2;
-                }
-              }
+            if(config_.dual_mode) {
+            // If in dual mode two consecutive blocks are the two echoes from one pulse  
+            // to keep the output in 
+
+            if (block_idx%2==0) {
+              // When processing dual echo, only save the data when processing first block (contains last echo)
+              temp_points[firing * 16 + dsr] ={.x=x_coord,.y=y_coord,.z=z_coord,.time=time,.intensity=intensity,.ring=static_cast<uint16_t>(corrections.laser_ring),.echo=0,.r=r,.g=g,.b=b,.a=a,num_echo=0,
+                                        .azimuth=static_cast<uint16_t>(azimuth_corrected),.distance=distance,.raw_bytes=tmp};
             }
             else {
-              num_echo = 1;
-              echo = 1;
+
+              // When processing second echo, do comparison with the first echo to determine number of echos etc. 
+              // Same data in the raw data bytes means we have only one echo, add only one real point
+              if (temp_points[firing * 16 + dsr].raw_bytes.uint == tmp.uint) {
+                echo = 1;
+                num_echo = 1;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+                // Add empty point in case we use organized point cloud container
+                data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, azimuth_corrected, nanf(""), nanf(""), time,echo,r,g,b,a,num_echo);
+
+              }
+              else {
+                // We have 2 echoes, add both points
+                echo = 1;
+                num_echo = 2;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+                temp_points[firing * 16 + dsr].echo = 2;
+                temp_points[firing * 16 + dsr].num_echo = 2;
+                data.addPoint(temp_points[firing * 16 + dsr].x,temp_points[firing * 16 + dsr].y,temp_points[firing * 16 + dsr].z,temp_points[firing * 16 + dsr].ring,temp_points[firing * 16 + dsr].azimuth,temp_points[firing * 16 + dsr].distance,temp_points[firing * 16 + dsr].intensity,temp_points[firing * 16 + dsr].time,temp_points[firing * 16 + dsr].echo,temp_points[firing * 16 + dsr].r,temp_points[firing * 16 + dsr].g,temp_points[firing * 16 + dsr].b,temp_points[firing * 16 + dsr].a,temp_points[firing * 16 + dsr].num_echo);
+              }
             }
-          data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+          }
+          else {
+            num_echo = 1;
+            echo = 1;
+            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+          }
           }
         }
-        data.newLine();
-      }
+        if (config_.dual_mode) {
+          //Add new line after processing both echoes of one laser pulse
+          if (block_idx%2==1) {
+            data.newLine();
+          }
+        }
+        else {
+          data.newLine();
+        }   
+     }
     }
   }
 } // namespace velodyne_rawdata
