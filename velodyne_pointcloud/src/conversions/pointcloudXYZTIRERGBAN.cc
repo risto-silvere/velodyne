@@ -24,11 +24,11 @@ namespace velodyne_pointcloud
         "g", 1, sensor_msgs::PointField::UINT8,
         "b", 1, sensor_msgs::PointField::UINT8,
         "a", 1, sensor_msgs::PointField::UINT8,
-        "num_echo", 1, sensor_msgs::PointField::UINT16),
+        "numecho", 1, sensor_msgs::PointField::UINT16),
         iter_x(cloud, "x"), iter_y(cloud, "y"), iter_z(cloud, "z"), iter_time(cloud, "time"),
         iter_intensity(cloud, "intensity"), iter_ring(cloud, "ring"), iter_echo(cloud, "echo"), 
         iter_r(cloud, "r"), iter_g(cloud, "g"), iter_b(cloud, "b"), iter_a(cloud, "a"), 
-        iter_num_echo(cloud, "num_echo")
+        iter_numecho(cloud, "numecho")
     {};
 
   PointcloudXYZTIRERGBAN::~PointcloudXYZTIRERGBAN() {}
@@ -47,7 +47,7 @@ namespace velodyne_pointcloud
     iter_g = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "g");
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
-    iter_num_echo = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "num_echo");
+    iter_numecho = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "numecho");
 
 
   }
@@ -65,7 +65,7 @@ namespace velodyne_pointcloud
     iter_g = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "g");
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
-    iter_num_echo = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "num_echo");
+    iter_numecho = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "numecho");
   }
 
   void PointcloudXYZTIRERGBAN::newLine()
@@ -73,7 +73,7 @@ namespace velodyne_pointcloud
 
   void PointcloudXYZTIRERGBAN::addPoint(float x, float y, float z, const uint16_t ring, const uint16_t /*azimuth*/, const float distance, 
                                         const float intensity, const float time, const uint16_t echo, const uint8_t r, const uint8_t g, 
-                                        const uint8_t b, const uint8_t a,const uint16_t num_echo)
+                                        const uint8_t b, const uint8_t a,const uint16_t numecho)
   {
     if(!pointInRange(distance)) return;
 
@@ -93,7 +93,7 @@ namespace velodyne_pointcloud
     *iter_g = g;
     *iter_b = b;
     *iter_a = a;
-    *iter_num_echo = num_echo;
+    *iter_numecho = numecho;
 
 
     ++cloud.width;
@@ -108,7 +108,7 @@ namespace velodyne_pointcloud
     ++iter_g;
     ++iter_b;
     ++iter_a;
-    ++iter_num_echo;
+    ++iter_numecho;
   }
 }
 

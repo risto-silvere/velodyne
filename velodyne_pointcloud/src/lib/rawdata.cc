@@ -280,7 +280,8 @@ inline float SQR(float val) { return val*val; }
   }
 
   /** Set up for offline operation */
-  int RawData::setupOffline(std::string calibration_file, double max_range_, double min_range_, double view_direction, double view_width)
+  int RawData::setupOffline(std::string calibration_file, double max_range_, double min_range_, double view_direction,
+                            double view_width)
   {
     setParameters(min_range_,max_range_,view_direction,view_width);
     ROS_DEBUG_STREAM("data ranges to publish: ["
@@ -313,7 +314,8 @@ inline float SQR(float val) { return val*val; }
    *  @param pkt raw packet to unpack
    *  @param pc shared pointer to point cloud (points are appended)
    */
-  void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt, DataContainerBase& data, const ros::Time& scan_start_time)
+  void RawData::unpack(const velodyne_msgs::VelodynePacket &pkt, DataContainerBase& data,
+                       const ros::Time& scan_start_time)
   {
     using velodyne_pointcloud::LaserCorrection;
     ROS_DEBUG_STREAM("Received packet, time: " << pkt.stamp);
@@ -476,47 +478,53 @@ inline float SQR(float val) { return val*val; }
           intensity = (intensity < min_intensity) ? min_intensity : intensity;
           intensity = (intensity > max_intensity) ? max_intensity : intensity;
 
-          uint16_t echo,num_echo;
+          uint16_t echo,numecho;
           uint8_t r=0,g=0,b=0,a=0;
 
-          if(config_.dual_mode){
+          if(config_.dual_mode) {
             // If in dual mode two consecutive blocks are the two echoes from one pulse  
             // to keep the output in 
-              two_bytes same_pulse_other_two_bytes;
-
-            if (block_idx%2==0)
-            {
+            if (block_idx%2==0) {
               // When processing dual echo, only save the data when processing first block (contains last echo)
-              temp_points[laser_idx] ={.x=x_coord,.y=y_coord,.z=z_coord,.time=time,.intensity=intensity,.ring=static_cast<uint16_t>(corrections.laser_ring),.echo=0,.r=r,.g=g,.b=b,.a=a,num_echo=0,
-                                        .azimuth=raw->blocks[block_idx].rotation,.distance=distance,.raw_bytes=tmp};
-            }
-            else {
-
+              temp_points[laser_idx] ={.x=x_coord, .y=y_coord, .z=z_coord, .time=time, .intensity=intensity,
+                                       .ring=static_cast<uint16_t>(corrections.laser_ring), .echo=0, .r=r,.g=g, .b=b,
+                                       .a=a, numecho=0, .azimuth=raw->blocks[block_idx].rotation, .distance=distance,
+                                       .raw_bytes=tmp};
+            } else {
               // When processing second echo, do comparison with the first echo to determine number of echos etc. 
               // Same data in the raw data bytes means we have only one echo, add only one real point
               if (temp_points[laser_idx].raw_bytes.uint == tmp.uint) {
                 echo = 1;
-                num_echo = 1;
-                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
+                numecho = 1;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation,
+                              distance, intensity, time, echo, r, g, b, a, numecho);
                 // Add empty point in case we use organized point cloud container
-                data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[block_idx].rotation, nanf(""), nanf(""), time,echo,r,g,b,a,num_echo);
+                data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, raw->blocks[block_idx].rotation,
+                              nanf(""), nanf(""), time, echo, r, g, b, a, numecho);
 
               }
               else {
                 // We have 2 echoes, add both points
                 echo = 1;
-                num_echo = 2;
-                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
+                numecho = 2;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, 
+                              distance, intensity, time, echo, r, g, b, a, numecho);
                 temp_points[laser_idx].echo = 2;
-                temp_points[laser_idx].num_echo = 2;
-                data.addPoint(temp_points[laser_idx].x,temp_points[laser_idx].y,temp_points[laser_idx].z,temp_points[laser_idx].ring,temp_points[laser_idx].azimuth,temp_points[laser_idx].distance,temp_points[laser_idx].intensity,temp_points[laser_idx].time,temp_points[laser_idx].echo,temp_points[laser_idx].r,temp_points[laser_idx].g,temp_points[laser_idx].b,temp_points[laser_idx].a,temp_points[laser_idx].num_echo);
+                temp_points[laser_idx].numecho = 2;
+                data.addPoint(temp_points[laser_idx].x, temp_points[laser_idx].y, temp_points[laser_idx].z, 
+                              temp_points[laser_idx].ring, temp_points[laser_idx].azimuth,
+                              temp_points[laser_idx].distance, temp_points[laser_idx].intensity,
+                              temp_points[laser_idx].time, temp_points[laser_idx].echo, temp_points[laser_idx].r,
+                              temp_points[laser_idx].g, temp_points[laser_idx].b, temp_points[laser_idx].a,
+                              temp_points[laser_idx].numecho);
               }
             }
           }
           else{
-            num_echo = 1;
+            numecho = 1;
             echo = 1;
-            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance, intensity, time,echo,r,g,b,a,num_echo);
+            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, distance,
+                          intensity, time,echo,r,g,b,a,numecho);
           }
         }
       }
@@ -538,7 +546,8 @@ inline float SQR(float val) { return val*val; }
    *  @param pkt raw packet to unpack
    *  @param pc shared pointer to point cloud (points are appended)
    */
-  void RawData::unpack_vlp16(const velodyne_msgs::VelodynePacket &pkt, DataContainerBase& data, const ros::Time& scan_start_time)
+  void RawData::unpack_vlp16(const velodyne_msgs::VelodynePacket &pkt, DataContainerBase& data,
+                             const ros::Time& scan_start_time)
   {
     float azimuth;
     float azimuth_diff;
@@ -577,8 +586,10 @@ inline float SQR(float val) { return val*val; }
 	// some packets contain an angle overflow where azimuth_diff < 0 
 	if(raw_azimuth_diff < 0)//raw->blocks[block_idx+1].rotation - raw->blocks[block_idx].rotation < 0)
 	  {
-	    ROS_WARN_STREAM_THROTTLE(60, "Packet containing angle overflow, first angle: " << raw->blocks[block_idx].rotation << " second angle: " << raw->blocks[block_idx+1].rotation);
-	    // if last_azimuth_diff was not zero, we can assume that the velodyne's speed did not change very much and use the same difference
+	    ROS_WARN_STREAM_THROTTLE(60, "Packet containing angle overflow, first angle: " << raw->blocks[block_idx].rotation
+                               << " second angle: " << raw->blocks[block_idx+1].rotation);
+	    // if last_azimuth_diff was not zero, we can assume that the velodyne's speed did not change very much and use
+      // the same difference
 	    if(last_azimuth_diff > 0){
 	      azimuth_diff = last_azimuth_diff;
 	    }
@@ -603,7 +614,8 @@ inline float SQR(float val) { return val*val; }
           tmp.bytes[1] = raw->blocks[block_idx].data[k+1];
           
           /** correct for the laser rotation as a function of timing during the firings **/
-          azimuth_corrected_f = azimuth + (azimuth_diff * ((dsr*VLP16_DSR_TOFFSET) + (firing*VLP16_FIRING_TOFFSET)) / VLP16_BLOCK_TDURATION);
+          azimuth_corrected_f = azimuth + (azimuth_diff * ((dsr*VLP16_DSR_TOFFSET) + 
+                                (firing*VLP16_FIRING_TOFFSET)) / VLP16_BLOCK_TDURATION);
           azimuth_corrected = ((int)round(azimuth_corrected_f)) % 36000;
                  
           /*condition added to avoid calculating points which are not
@@ -715,7 +727,7 @@ inline float SQR(float val) { return val*val; }
             if (timing_offsets.size())
               time = timing_offsets[block_idx][firing * 16 + dsr] + time_diff_start_to_this_packet;
 
-            uint16_t echo,num_echo;
+            uint16_t echo,numecho;
             uint8_t r=0,g=0,b=0,a=0;
 
             if(config_.dual_mode) {
@@ -724,8 +736,11 @@ inline float SQR(float val) { return val*val; }
 
             if (block_idx%2==0) {
               // When processing dual echo, only save the data when processing first block (contains last echo)
-              temp_points[firing * 16 + dsr] ={.x=x_coord,.y=y_coord,.z=z_coord,.time=time,.intensity=intensity,.ring=static_cast<uint16_t>(corrections.laser_ring),.echo=0,.r=r,.g=g,.b=b,.a=a,num_echo=0,
-                                        .azimuth=static_cast<uint16_t>(azimuth_corrected),.distance=distance,.raw_bytes=tmp};
+              temp_points[firing * 16 + dsr] ={.x=x_coord, .y=y_coord, .z=z_coord,.time=time, .intensity=intensity,
+                                               .ring=static_cast<uint16_t>(corrections.laser_ring), .echo=0, .r=r,
+                                               .g=g, .b=b, .a=a,numecho=0,
+                                               .azimuth=static_cast<uint16_t>(azimuth_corrected), .distance=distance,
+                                               .raw_bytes=tmp};
             }
             else {
 
@@ -733,27 +748,37 @@ inline float SQR(float val) { return val*val; }
               // Same data in the raw data bytes means we have only one echo, add only one real point
               if (temp_points[firing * 16 + dsr].raw_bytes.uint == tmp.uint) {
                 echo = 1;
-                num_echo = 1;
-                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+                numecho = 1;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance,
+                              intensity, time,echo,r,g,b,a,numecho);
                 // Add empty point in case we use organized point cloud container
-                data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, azimuth_corrected, nanf(""), nanf(""), time,echo,r,g,b,a,num_echo);
+                data.addPoint(nanf(""), nanf(""), nanf(""), corrections.laser_ring, azimuth_corrected, nanf(""),
+                              nanf(""), time,echo,r,g,b,a,numecho);
 
               }
               else {
                 // We have 2 echoes, add both points
                 echo = 1;
-                num_echo = 2;
-                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+                numecho = 2;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance,
+                              intensity, time,echo,r,g,b,a,numecho);
                 temp_points[firing * 16 + dsr].echo = 2;
-                temp_points[firing * 16 + dsr].num_echo = 2;
-                data.addPoint(temp_points[firing * 16 + dsr].x,temp_points[firing * 16 + dsr].y,temp_points[firing * 16 + dsr].z,temp_points[firing * 16 + dsr].ring,temp_points[firing * 16 + dsr].azimuth,temp_points[firing * 16 + dsr].distance,temp_points[firing * 16 + dsr].intensity,temp_points[firing * 16 + dsr].time,temp_points[firing * 16 + dsr].echo,temp_points[firing * 16 + dsr].r,temp_points[firing * 16 + dsr].g,temp_points[firing * 16 + dsr].b,temp_points[firing * 16 + dsr].a,temp_points[firing * 16 + dsr].num_echo);
+                temp_points[firing * 16 + dsr].numecho = 2;
+                data.addPoint(temp_points[firing * 16 + dsr].x, temp_points[firing * 16 + dsr].y,
+                              temp_points[firing * 16 + dsr].z, temp_points[firing * 16 + dsr].ring,
+                              temp_points[firing * 16 + dsr].azimuth, temp_points[firing * 16 + dsr].distance,
+                              temp_points[firing * 16 + dsr].intensity, temp_points[firing * 16 + dsr].time,
+                              temp_points[firing * 16 + dsr].echo, temp_points[firing * 16 + dsr].r,
+                              temp_points[firing * 16 + dsr].g, temp_points[firing * 16 + dsr].b,
+                              temp_points[firing * 16 + dsr].a, temp_points[firing * 16 + dsr].numecho);
               }
             }
           }
           else {
-            num_echo = 1;
+            numecho = 1;
             echo = 1;
-            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time,echo,r,g,b,a,num_echo);
+            data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity,
+                          time,echo,r,g,b,a,numecho);
           }
           }
         }

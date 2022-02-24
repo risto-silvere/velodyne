@@ -23,11 +23,11 @@ namespace velodyne_pointcloud
         "g", 1, sensor_msgs::PointField::UINT8,
         "b", 1, sensor_msgs::PointField::UINT8,
         "a", 1, sensor_msgs::PointField::UINT8,
-        "num_echo", 1, sensor_msgs::PointField::UINT16),
+        "numecho", 1, sensor_msgs::PointField::UINT16),
         iter_x(cloud, "x"), iter_y(cloud, "y"), iter_z(cloud, "z"), iter_time(cloud, "time"),
         iter_intensity(cloud, "intensity"), iter_ring(cloud, "ring"), iter_echo(cloud, "echo"), 
         iter_r(cloud, "r"), iter_g(cloud, "g"), iter_b(cloud, "b"), iter_a(cloud, "a"), 
-        iter_num_echo(cloud, "num_echo")
+        iter_numecho(cloud, "numecho")
   {
   }
 
@@ -47,7 +47,7 @@ namespace velodyne_pointcloud
     iter_g = iter_g + config_.init_width;
     iter_b = iter_b + config_.init_width;
     iter_a = iter_a + config_.init_width;
-    iter_num_echo = iter_num_echo + config_.init_width;
+    iter_numecho = iter_numecho + config_.init_width;
     ++cloud.height;
   }
 
@@ -64,7 +64,7 @@ namespace velodyne_pointcloud
     iter_g = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "g");
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
-    iter_num_echo = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "num_echo");
+    iter_numecho = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "numecho");
   }
 
   void OrganizedCloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodynePacket & packet_msg, const uint32_t & seq){
@@ -80,12 +80,12 @@ namespace velodyne_pointcloud
     iter_g = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "g");
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
-    iter_num_echo = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "num_echo");
+    iter_numecho = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "numecho");
   }
   void OrganizedCloudXYZTIRERGBAN::addPoint(float x, float y, float z,
     const uint16_t ring, const uint16_t /*azimuth*/, const float distance, const float intensity, const float time, 
     const uint16_t echo, const uint8_t r, const uint8_t g, 
-    const uint8_t b, const uint8_t a, const uint16_t num_echo)
+    const uint8_t b, const uint8_t a, const uint16_t numecho)
   {
     /** The laser values are not ordered, the organized structure
      * needs ordered neighbour points. The right order is defined
@@ -108,7 +108,7 @@ namespace velodyne_pointcloud
       *(iter_g+ring) = g;
       *(iter_b+ring) = b;
       *(iter_a+ring) = a;
-      *(iter_num_echo+ring) = num_echo;      
+      *(iter_numecho+ring) = numecho;      
     }
     else
     {
@@ -123,7 +123,7 @@ namespace velodyne_pointcloud
       *(iter_g+ring) = g;
       *(iter_b+ring) = b;
       *(iter_a+ring) = a;
-      *(iter_num_echo+ring) = num_echo;     
+      *(iter_numecho+ring) = numecho;     
     }
   }
 }

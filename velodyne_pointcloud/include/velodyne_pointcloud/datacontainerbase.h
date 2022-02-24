@@ -128,7 +128,7 @@ public:
   virtual void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth, const float distance,
                         const float intensity, const float time, 
                         const uint16_t echo, const uint8_t r, const uint8_t g, 
-                        const uint8_t b, const uint8_t a,const uint16_t num_echo) = 0;
+                        const uint8_t b, const uint8_t a,const uint16_t numecho) = 0;
   virtual void newLine() = 0;
 
   const sensor_msgs::PointCloud2& finishCloud()

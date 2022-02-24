@@ -54,10 +54,10 @@ public:
   void addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth,
                         const float distance, const float intensity, const float time, 
                         const uint16_t echo, const uint8_t r, const uint8_t g, 
-                        const uint8_t b, const uint8_t a,const uint16_t num_echo);
+                        const uint8_t b, const uint8_t a,const uint16_t numecho);
 
   sensor_msgs::PointCloud2Iterator<float> iter_x, iter_y, iter_z, iter_intensity, iter_time;
-  sensor_msgs::PointCloud2Iterator<uint16_t> iter_ring, iter_echo, iter_num_echo;
+  sensor_msgs::PointCloud2Iterator<uint16_t> iter_ring, iter_echo, iter_numecho;
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_r, iter_g, iter_b,iter_a;
 };
 }  // namespace velodyne_pointcloud
