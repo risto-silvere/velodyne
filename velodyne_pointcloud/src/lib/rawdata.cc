@@ -505,10 +505,7 @@ inline float SQR(float val) { return val*val; }
               }
               else {
                 // We have 2 echoes, add both points
-                echo = 1;
-                numecho = 2;
-                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, 
-                              distance, intensity, time, echo, r, g, b, a, numecho);
+
                 temp_points[laser_idx].echo = 2;
                 temp_points[laser_idx].numecho = 2;
                 data.addPoint(temp_points[laser_idx].x, temp_points[laser_idx].y, temp_points[laser_idx].z, 
@@ -517,6 +514,10 @@ inline float SQR(float val) { return val*val; }
                               temp_points[laser_idx].time, temp_points[laser_idx].echo, temp_points[laser_idx].r,
                               temp_points[laser_idx].g, temp_points[laser_idx].b, temp_points[laser_idx].a,
                               temp_points[laser_idx].numecho);
+                echo = 1;
+                numecho = 2;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, raw->blocks[block_idx].rotation, 
+                              distance, intensity, time, echo, r, g, b, a, numecho);
               }
             }
           }
@@ -758,10 +759,6 @@ inline float SQR(float val) { return val*val; }
               }
               else {
                 // We have 2 echoes, add both points
-                echo = 1;
-                numecho = 2;
-                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance,
-                              intensity, time,echo,r,g,b,a,numecho);
                 temp_points[firing * 16 + dsr].echo = 2;
                 temp_points[firing * 16 + dsr].numecho = 2;
                 data.addPoint(temp_points[firing * 16 + dsr].x, temp_points[firing * 16 + dsr].y,
@@ -771,6 +768,10 @@ inline float SQR(float val) { return val*val; }
                               temp_points[firing * 16 + dsr].echo, temp_points[firing * 16 + dsr].r,
                               temp_points[firing * 16 + dsr].g, temp_points[firing * 16 + dsr].b,
                               temp_points[firing * 16 + dsr].a, temp_points[firing * 16 + dsr].numecho);
+                echo = 1;
+                numecho = 2;
+                data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance,
+                              intensity, time,echo,r,g,b,a,numecho);
               }
             }
           }
