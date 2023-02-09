@@ -15,8 +15,8 @@
 
 #include "velodyne_pointcloud/convert.h"
 
-#include <velodyne_pointcloud/pointcloudXYZTIRERGBAN.h>
-#include <velodyne_pointcloud/organized_cloudXYZTIRERGBAN.h>
+#include <velodyne_pointcloud/pointcloudXYZTIRERGBANA.h>
+#include <velodyne_pointcloud/organized_cloudXYZTIRERGBANA.h>
 
 namespace velodyne_pointcloud
 {
@@ -45,15 +45,15 @@ namespace velodyne_pointcloud
 
     if(config_.organize_cloud)
     {
-      container_ptr_ = boost::shared_ptr<OrganizedCloudXYZTIRERGBAN>(
-          new OrganizedCloudXYZTIRERGBAN(config_.max_range, config_.min_range,
+      container_ptr_ = boost::shared_ptr<OrganizedCloudXYZTIRERGBANA>(
+          new OrganizedCloudXYZTIRERGBANA(config_.max_range, config_.min_range,
               config_.target_frame, config_.fixed_frame,
               config_.num_lasers, data_->scansPerPacket()));
     }
     else
     {
-      container_ptr_ = boost::shared_ptr<PointcloudXYZTIRERGBAN>(
-          new PointcloudXYZTIRERGBAN(config_.max_range, config_.min_range,
+      container_ptr_ = boost::shared_ptr<PointcloudXYZTIRERGBANA>(
+          new PointcloudXYZTIRERGBANA(config_.max_range, config_.min_range,
               config_.target_frame, config_.fixed_frame,
               data_->scansPerPacket()));
     }
@@ -107,15 +107,15 @@ namespace velodyne_pointcloud
         if(config_.organize_cloud) // TODO only on change
         {
             ROS_INFO_STREAM("Using the organized cloud format...");
-            container_ptr_ = boost::shared_ptr<OrganizedCloudXYZTIRERGBAN>(
-                new OrganizedCloudXYZTIRERGBAN(config_.max_range, config_.min_range,
+            container_ptr_ = boost::shared_ptr<OrganizedCloudXYZTIRERGBANA>(
+                new OrganizedCloudXYZTIRERGBANA(config_.max_range, config_.min_range,
                     config_.target_frame, config_.fixed_frame,
                     config_.num_lasers, data_->scansPerPacket()));
         }
         else
         {
-            container_ptr_ = boost::shared_ptr<PointcloudXYZTIRERGBAN>(
-                new PointcloudXYZTIRERGBAN(config_.max_range, config_.min_range,
+            container_ptr_ = boost::shared_ptr<PointcloudXYZTIRERGBANA>(
+                new PointcloudXYZTIRERGBANA(config_.max_range, config_.min_range,
                     config_.target_frame, config_.fixed_frame,
                     data_->scansPerPacket()));
         }

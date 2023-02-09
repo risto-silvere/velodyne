@@ -27,22 +27,22 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef VELODYNE_POINTCLOUD_POINTCLOUDXYZTIRERGBAN_H
-#define VELODYNE_POINTCLOUD_POINTCLOUDXYZTIRERGBAN_H
+#ifndef VELODYNE_POINTCLOUD_POINTCLOUDXYZTIRERGBANA_H
+#define VELODYNE_POINTCLOUD_POINTCLOUDXYZTIRERGBANA_H
 
 #include <velodyne_pointcloud/datacontainerbase.h>
 #include <string>
 
 namespace velodyne_pointcloud
 {
-class PointcloudXYZTIRERGBAN : public velodyne_rawdata::DataContainerBase
+class PointcloudXYZTIRERGBANA : public velodyne_rawdata::DataContainerBase
 {
 public:
-  PointcloudXYZTIRERGBAN(const double max_range, const double min_range, const std::string& target_frame,
+  PointcloudXYZTIRERGBANA(const double max_range, const double min_range, const std::string& target_frame,
                   const std::string& fixed_frame, const unsigned int scans_per_block,
                   boost::shared_ptr<tf::TransformListener> tf_ptr = boost::shared_ptr<tf::TransformListener>());
 
-  virtual ~PointcloudXYZTIRERGBAN();
+  virtual ~PointcloudXYZTIRERGBANA();
 
 
   virtual void setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg);
@@ -57,9 +57,9 @@ public:
                         const uint8_t b, const uint8_t a,const uint16_t numecho);
 
   sensor_msgs::PointCloud2Iterator<float> iter_x, iter_y, iter_z, iter_intensity, iter_time;
-  sensor_msgs::PointCloud2Iterator<uint16_t> iter_ring, iter_echo, iter_numecho;
+  sensor_msgs::PointCloud2Iterator<uint16_t> iter_ring, iter_echo, iter_numecho, iter_azimuth;
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_r, iter_g, iter_b,iter_a;
 };
 }  // namespace velodyne_pointcloud
 
-#endif  // VELODYNE_POINTCLOUD_POINTCLOUXYZTIRERGBAN_H
+#endif  // VELODYNE_POINTCLOUD_POINTCLOUXYZTIRERGBANA_H

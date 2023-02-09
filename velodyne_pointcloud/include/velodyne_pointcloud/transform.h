@@ -49,7 +49,7 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <velodyne_pointcloud/rawdata.h>
-#include <velodyne_pointcloud/pointcloudXYZTIRERGBAN.h>
+#include <velodyne_pointcloud/pointcloudXYZTIRERGBANA.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <velodyne_pointcloud/TransformNodeConfig.h>

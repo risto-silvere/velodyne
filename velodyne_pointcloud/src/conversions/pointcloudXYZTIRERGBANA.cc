@@ -1,18 +1,18 @@
 
 
 
-#include <velodyne_pointcloud/pointcloudXYZTIRERGBAN.h>
+#include <velodyne_pointcloud/pointcloudXYZTIRERGBANA.h>
 
 namespace velodyne_pointcloud 
 {
 
-  PointcloudXYZTIRERGBAN::PointcloudXYZTIRERGBAN(
+  PointcloudXYZTIRERGBANA::PointcloudXYZTIRERGBANA(
     const double max_range, const double min_range,
     const std::string& target_frame, const std::string& fixed_frame,
     const unsigned int scans_per_block, boost::shared_ptr<tf::TransformListener> tf_ptr)
     : DataContainerBase(
         max_range, min_range, target_frame, fixed_frame,
-        0, 1, true, scans_per_block, tf_ptr, 12,
+        0, 1, true, scans_per_block, tf_ptr, 13,
         "x", 1, sensor_msgs::PointField::FLOAT32,
         "y", 1, sensor_msgs::PointField::FLOAT32,
         "z", 1, sensor_msgs::PointField::FLOAT32,
@@ -24,17 +24,18 @@ namespace velodyne_pointcloud
         "g", 1, sensor_msgs::PointField::UINT8,
         "b", 1, sensor_msgs::PointField::UINT8,
         "a", 1, sensor_msgs::PointField::UINT8,
-        "numecho", 1, sensor_msgs::PointField::UINT16),
+        "numecho", 1, sensor_msgs::PointField::UINT16,
+        "azimuth", 1, sensor_msgs::PointField::UINT16),
         iter_x(cloud, "x"), iter_y(cloud, "y"), iter_z(cloud, "z"), iter_time(cloud, "time"),
         iter_intensity(cloud, "intensity"), iter_ring(cloud, "ring"), iter_echo(cloud, "echo"), 
         iter_r(cloud, "r"), iter_g(cloud, "g"), iter_b(cloud, "b"), iter_a(cloud, "a"), 
-        iter_numecho(cloud, "numecho")
+        iter_numecho(cloud, "numecho"), iter_azimuth(cloud, "azimuth")
     {};
 
-  PointcloudXYZTIRERGBAN::~PointcloudXYZTIRERGBAN() {}
+  PointcloudXYZTIRERGBANA::~PointcloudXYZTIRERGBANA() {}
 
 
-  void PointcloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg){
+  void PointcloudXYZTIRERGBANA::setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg){
     DataContainerBase::setup(scan_msg);
     iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
@@ -48,11 +49,10 @@ namespace velodyne_pointcloud
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
     iter_numecho = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "numecho");
-
-
+    iter_azimuth = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "azimuth");
   }
 
-  void PointcloudXYZTIRERGBAN::setup(const velodyne_msgs::VelodynePacket & packet_msg, const uint32_t & seq){
+  void PointcloudXYZTIRERGBANA::setup(const velodyne_msgs::VelodynePacket & packet_msg, const uint32_t & seq){
     DataContainerBase::setup(packet_msg, seq);
     iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
@@ -66,12 +66,13 @@ namespace velodyne_pointcloud
     iter_b = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "b");
     iter_a = sensor_msgs::PointCloud2Iterator<uint8_t >(cloud, "a");
     iter_numecho = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "numecho");
+    iter_azimuth = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "azimuth");
   }
 
-  void PointcloudXYZTIRERGBAN::newLine()
+  void PointcloudXYZTIRERGBANA::newLine()
   {}
 
-  void PointcloudXYZTIRERGBAN::addPoint(float x, float y, float z, const uint16_t ring, const uint16_t /*azimuth*/, const float distance, 
+  void PointcloudXYZTIRERGBANA::addPoint(float x, float y, float z, const uint16_t ring, const uint16_t azimuth, const float distance, 
                                         const float intensity, const float time, const uint16_t echo, const uint8_t r, const uint8_t g, 
                                         const uint8_t b, const uint8_t a,const uint16_t numecho)
   {
@@ -94,7 +95,7 @@ namespace velodyne_pointcloud
     *iter_b = b;
     *iter_a = a;
     *iter_numecho = numecho;
-
+    *iter_azimuth = azimuth;
 
     ++cloud.width;
     ++iter_x;
@@ -109,6 +110,7 @@ namespace velodyne_pointcloud
     ++iter_b;
     ++iter_a;
     ++iter_numecho;
+    ++iter_azimuth;
   }
 }
 
